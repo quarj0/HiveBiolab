@@ -17,7 +17,7 @@ DEBUG = config("DEBUG", default=False, cast=bool)
 
 ALLOWED_HOSTS = config(
     "ALLOWED_HOSTS",
-    "biolab.kumasihive.com,api.biolab.kumasihive.com,biolab-backend-48463709379.europe-west2.run.app",
+    "biolab.kumasihive.com,api.biolab.kumasihive.com,https://biolab-backend-48463709379.europe-west1.run.app",
 ).split()
 
 FRONTEND_ORIGINS_SETTING = config(
