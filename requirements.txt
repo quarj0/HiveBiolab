@@ -51,5 +51,5 @@ rsa==4.9.1
 six==1.17.0
 sqlparse==0.5.4
 typing_extensions==4.15.0
-urllib3==1.26.20
+urllib3>=1.26.20,<2
 whitenoise==6.11.0
