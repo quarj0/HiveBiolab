@@ -9,14 +9,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config(
-    "DJANGO_SECRET_KEY",
+    "SECRET_KEY",
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config("DJANGO_DEBUG", "true").lower() in ("1", "true", "yes")
+DEBUG = config("DEBUG", "true").lower() in ("1", "true", "yes")
 
 ALLOWED_HOSTS = [
-    host for host in config("DJANGO_ALLOWED_HOSTS", "*").split() if host
+    host for host in config("ALLOWED_HOSTS", "*").split() if host
 ] or ["*"]
 
 FRONTEND_ORIGINS_SETTING = config(
