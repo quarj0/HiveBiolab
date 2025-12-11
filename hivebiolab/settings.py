@@ -13,11 +13,11 @@ SECRET_KEY = config(
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config("DEBUG", "true").lower() in ("1", "true", "yes")
+DEBUG = config("DEBUG", default=False, cast=bool)
 
-ALLOWED_HOSTS = [
-    host for host in config("ALLOWED_HOSTS", "*").split() if host
-] or ["*"]
+ALLOWED_HOSTS = config(
+    "ALLOWED_HOSTS", "biolab.kumasihive.com"
+).split()
 
 FRONTEND_ORIGINS_SETTING = config(
     "FRONTEND_ORIGINS", "https://biolab.kumasihive.com"
