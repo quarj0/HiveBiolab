@@ -15,10 +15,7 @@ SECRET_KEY = config(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config("DEBUG", default=False, cast=bool)
 
-ALLOWED_HOSTS = config(
-    "ALLOWED_HOSTS",
-    "biolab.kumasihive.com,api.biolab.kumasihive.com,https://biolab-backend-48463709379.europe-west1.run.app",
-).split()
+ALLOWED_HOSTS = ["*"]
 
 FRONTEND_ORIGINS_SETTING = config(
     "FRONTEND_ORIGINS", "https://biolab.kumasihive.com"
