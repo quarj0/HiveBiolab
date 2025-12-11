@@ -1,12 +1,13 @@
 import logging
 import os
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, Optional
 
 logger = logging.getLogger(__name__)
 
 _firestore_client = None
 _firebase_modules: Tuple = ()
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 def _load_firebase_modules():
@@ -52,10 +53,19 @@ def _initialize_firebase(firebase_admin_module, credentials_module):
         return
 
     credential_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+    credential_file: Optional[Path] = None
+
+    if credential_path:
+        credential_file = Path(credential_path)
+        if not credential_file.is_absolute():
+            credential_file = BASE_DIR / credential_file
+    else:
+        implicit = BASE_DIR / "kumasihivewebsite-service.json"
+        if implicit.exists():
+            credential_file = implicit
 
     try:
-        if credential_path:
-            credential_file = Path(credential_path)
+        if credential_file:
             if not credential_file.exists():
                 raise RuntimeError(
                     f"Firebase credential file not found at {credential_file}"

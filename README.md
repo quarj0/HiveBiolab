@@ -12,7 +12,7 @@ This Django service implements the API surface that `hive-bio` will reach out to
    pip install -r requirements.txt
    ```
 
-2. Set the environment variables described below.
+2. Copy `.env.example` to `.env`, fill in real values for your Firebase project/hosts, and keep the actual `.env` file out of source control.
 3. Run database migrations (even though Firestore stores the data, Django still expects migrations for future models).
 
    ```bash
@@ -30,13 +30,26 @@ This Django service implements the API surface that `hive-bio` will reach out to
 | Variable | Description | Default |
 | --- | --- | --- |
 | `DJANGO_SECRET_KEY` | Django secret key used in production (keep it secret). | `django-insecure-d2=...` |
-| `DJANGO_DEBUG` | Set to `false` in production. | `true` |
+| `DJANGO_DEBUG` | Debug flag (`false` in production). | `true` |
 | `DJANGO_ALLOWED_HOSTS` | Space-separated hosts allowed (`example.com api.example.com`). | `*` |
 | `FRONTEND_ORIGINS` | Space-separated frontend origins for CORS. Set to `*` to allow all. | `http://localhost:5173` |
-| `CSRF_TRUSTED_ORIGINS` | Optional override for CSRF trusted origins. Defaults to the same value as `FRONTEND_ORIGINS`. | (see above) |
-| `GOOGLE_APPLICATION_CREDENTIALS` | Path to the Firebase service account JSON. Required when running locally. | — |
+| `CSRF_TRUSTED_ORIGINS` | Override for CSRF trusted origins (defaults to `FRONTEND_ORIGINS`). | (see above) |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Path to the Firebase service-account JSON (local only). Leave empty to let `kumasihivewebsite-service.json` in the repo root do the job. | `kumasihivewebsite-service.json` |
+| `JAZZMIN_SITE_TITLE` | Text shown in the browser title bar of the admin. | `HiveBiolab Admin` |
+| `JAZZMIN_SITE_HEADER` | Header text that appears inside the Jazzmin layout. | `HiveBiolab` |
+| `JAZZMIN_SITE_BRAND` | Branding text in the sidebar. | `HiveBiolab` |
+| `JAZZMIN_WELCOME_SIGN` | Welcome message that shows on the admin index page. | `Review newsletter, contact, and training requests` |
+| `JAZZMIN_COPYRIGHT` | Footer text shown in the Jazzmin layout. | `HiveBiolab © 2025` |
+
+`python-dotenv` automatically loads the `.env` file when Django boots, so any env var you place there is available to the settings module.
 
 When deployed to Cloud Run with a service account that has Firestore access, you can omit `GOOGLE_APPLICATION_CREDENTIALS` and rely on Application Default Credentials.
+
+## Environment file
+
+- Copy `.env.example` to `.env` and update it with your secrets (service account path, allowed hosts, CORS origins, Jazzmin labels, etc.).
+- `.env` is loaded automatically by `python-dotenv`, so each `manage.py` invocation and Cloud Run container sees the same configuration.
+- If you keep a service account JSON named `kumasihivewebsite-service.json` at the project root, `firebase-admin` will load it automatically when `GOOGLE_APPLICATION_CREDENTIALS` is unset, but you can still point to a different file by overriding the env var.
 
 ## Firestore collections
 
