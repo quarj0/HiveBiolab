@@ -15,7 +15,8 @@ DEBUG = config("DEBUG", default=False, cast=bool)
 
 ALLOWED_HOSTS = config(
     "ALLOWED_HOSTS",
-    "biolab.kumasihive.com api.biolab.kumasihive.com",
+    "biolab.kumasihive.com",
+    "api.biolab.kumasihive.com",
 ).split()
 
 
