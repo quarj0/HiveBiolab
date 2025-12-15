@@ -15,13 +15,18 @@ SECRET_KEY = config(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config("DEBUG", default=True, cast=bool)
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = "*"
 
 FRONTEND_ORIGINS_SETTING = config(
     "FRONTEND_ORIGINS", "https://biolab.kumasihive.com"
 ).strip()
 
 ALLOW_ALL_ORIGINS = FRONTEND_ORIGINS_SETTING == "*"
+CSRF_TRUSTED_ORIGINS = [
+    "https://biolab.kumasihive.com",
+    "https://api.biolab.kumasihive.com",
+    "https://biolab-backend-48463709379.europe-west1.run.app",
+]
 
 if not DEBUG:
     SAME_SITE_COOKIE = "Lax"
