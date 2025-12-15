@@ -16,10 +16,13 @@ SECRET_KEY = config("SECRET_KEY")
 DEBUG = config("DEBUG", default=False, cast=bool)
 TESTING = len(sys.argv) > 1 and sys.argv[1] == "test"
 
-ALLOWED_HOSTS = config(
-    "ALLOWED_HOSTS",
-    default="api.biolab.kumasihive.com",
-).split()
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in config("ALLOWED_HOSTS", default="api.biolab.kumasihive.com")
+    .replace(",", " ")
+    .split()
+    if host.strip()
+]
 
 
 # ─────────────────────────────
