@@ -1,5 +1,6 @@
 import logging
 
+from django.db import DatabaseError
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
@@ -9,7 +10,8 @@ from hivebiolab.api_helpers import (
     json_success,
     get_client_metadata,
 )
-from hivebiolab.firebase_client import get_firestore_client, get_server_timestamp
+
+from .models import ContactMessage
 
 logger = logging.getLogger(__name__)
 
@@ -29,25 +31,20 @@ def submit_message(request):
         return json_error("Name, email, and message are required.")
 
     metadata = get_client_metadata(request)
-    document = {
-        "name": name,
-        "email": email.lower(),
-        "subject": (payload.get("subject") or "General inquiry").strip(),
-        "message": message,
-        "organization": payload.get("organization"),
-        "metadata": metadata,
-        "created_at": get_server_timestamp(),
-    }
+    subject = (payload.get("subject") or "").strip() or "General inquiry"
+    organization = (payload.get("organization") or "").strip() or None
 
     try:
-        client = get_firestore_client()
-        collection = client.collection("contact_messages")
-        doc_ref, _ = collection.add(document)
-    except RuntimeError as exc:
-        logger.exception("Firebase initialization failed.", exc_info=exc)
-        return json_error(str(exc), status=500)
-    except Exception:  # pragma: no cover - network/db
-        logger.exception("Failed to persist contact message.")
+        entry = ContactMessage.objects.create(
+            name=name,
+            email=email.lower(),
+            subject=subject,
+            message=message,
+            organization=organization,
+            metadata=metadata,
+        )
+    except DatabaseError as exc:  # pragma: no cover - DB failure
+        logger.exception("Failed to persist contact message.", exc_info=exc)
         return json_error(
             "Unable to submit the form right now. Please try again later.", status=500
         )
@@ -55,5 +52,5 @@ def submit_message(request):
     return json_success(
         "Thanks for reaching out! We will respond as soon as possible.",
         status=201,
-        extra={"message_id": doc_ref.id},
+        extra={"message_id": entry.pk},
     )

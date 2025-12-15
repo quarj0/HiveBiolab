@@ -1,6 +1,6 @@
 # HiveBiolab Backend
 
-This Django service implements the API surface that `hive-bio` will reach out to when it needs persistence or notifications. The project stores incoming submissions—newsletter signups, contact messages, and training registrations—in Firestore so the frontend team can deploy the static assets anywhere (Vite, Cloud Run, etc.) without bundling persistence.
+This Django service implements the API surface that `hive-bio` reaches out to when it needs persistence or notifications. Incoming submissions—newsletter signups, contact messages, and training registrations—are stored in Django models backed by the configured SQL database (SQLite by default), so you can review them using the admin at `/admin/` or query them directly from the database.
 
 ## Getting started
 
@@ -12,8 +12,8 @@ This Django service implements the API surface that `hive-bio` will reach out to
    pip install -r requirements.txt
    ```
 
-2. Copy `.env.example` to `.env`, fill in real values for your Firebase project/hosts, and keep the actual `.env` file out of source control.
-3. Run database migrations (even though Firestore stores the data, Django still expects migrations for future models).
+2. Copy the provided `.env` file or create a new one (*keep it out of source control*) and update it with host/CORS settings plus real secrets such as `SECRET_KEY`. The file is automatically loaded by `python-dotenv`.
+3. Run Django migrations so the `contact`, `newsletter`, and `training` tables exist.
 
    ```bash
    python manage.py migrate
@@ -29,39 +29,34 @@ This Django service implements the API surface that `hive-bio` will reach out to
 
 | Variable | Description | Default |
 | --- | --- | --- |
-| `DJANGO_SECRET_KEY` | Django secret key used in production (keep it secret). | `django-insecure-d2=...` |
-| `DJANGO_DEBUG` | Debug flag (`false` in production). | `true` |
-| `DJANGO_ALLOWED_HOSTS` | Space-separated hosts allowed (`example.com api.example.com`). | `*` |
-| `FRONTEND_ORIGINS` | Space-separated frontend origins for CORS. Set to `*` to allow all. | `http://localhost:5173` |
-| `CSRF_TRUSTED_ORIGINS` | Override for CSRF trusted origins (defaults to `FRONTEND_ORIGINS`). | (see above) |
-| `GOOGLE_APPLICATION_CREDENTIALS` | Path to the Firebase service-account JSON (local only). Leave empty to let `kumasihivewebsite-service.json` in the repo root do the job. | `kumasihivewebsite-service.json` |
-| `JAZZMIN_SITE_TITLE` | Text shown in the browser title bar of the admin. | `HiveBiolab Admin` |
-| `JAZZMIN_SITE_HEADER` | Header text that appears inside the Jazzmin layout. | `HiveBiolab` |
-| `JAZZMIN_SITE_BRAND` | Branding text in the sidebar. | `HiveBiolab` |
-| `JAZZMIN_WELCOME_SIGN` | Welcome message that shows on the admin index page. | `Review newsletter, contact, and training requests` |
-| `JAZZMIN_COPYRIGHT` | Footer text shown in the Jazzmin layout. | `HiveBiolab © 2025` |
+| `SECRET_KEY` | Django secret key (must be kept secret in production). | (set a long random value per environment) |
+| `DEBUG` | Disable for production (`false`); `true` enables Django’s error pages locally. | `false` |
+| `ALLOWED_HOSTS` | Space-separated hosts allowed to serve the API. | `*` |
+| `FRONTEND_ORIGINS` | Space-separated origins that can make CORS requests. | `https://biolab.kumasihive.com` |
+| `CSRF_TRUSTED_ORIGINS` | Origins allowed to bypass the CSRF origin check (defaults to `FRONTEND_ORIGINS`). | (see above) |
+| `JAZZMIN_SITE_TITLE` | Browser title for the admin. | `HiveBiolab Admin` |
+| `JAZZMIN_SITE_HEADER` | Header text inside the admin layout. | `HiveBiolab` |
+| `JAZZMIN_SITE_BRAND` | Branding text shown in the sidebar. | `HiveBiolab` |
+| `JAZZMIN_WELCOME_SIGN` | Welcome message on the admin index page. | `Review newsletter, contact, and training requests` |
+| `JAZZMIN_COPYRIGHT` | Footer text shown in Jazzmin. | `HiveBiolab © 2025` |
 
-`python-dotenv` automatically loads the `.env` file when Django boots, so any env var you place there is available to the settings module.
-
-When deployed to Cloud Run with a service account that has Firestore access, you can omit `GOOGLE_APPLICATION_CREDENTIALS` and rely on Application Default Credentials.
+`python-dotenv` automatically loads the `.env` file when Django boots, so any env var you place there is visible to the settings module.
 
 ## Environment file
 
-- Copy `.env.example` to `.env` and update it with your secrets (service account path, allowed hosts, CORS origins, Jazzmin labels, etc.).
-- `.env` is loaded automatically by `python-dotenv`, so each `manage.py` invocation and Cloud Run container sees the same configuration.
-- If you keep a service account JSON named `kumasihivewebsite-service.json` at the project root, `firebase-admin` will load it automatically when `GOOGLE_APPLICATION_CREDENTIALS` is unset, but you can still point to a different file by overriding the env var.
+- Copy the provided `.env` (or create a new one) and populate it with sensible host, CORS, and Jazzmin labels plus secrets such as `SECRET_KEY`. Keep that file out of version control.
+- Each `manage.py` invocation and Cloud Run container sees the same configuration thanks to `python-dotenv`.
 
-## Firestore collections
+## Stored data
 
-- `newsletter_subscribers`
-- `contact_messages`
-- `training_registrations`
-
-Each document automatically receives `created_at` (Firestore server timestamp) and metadata fields such as `ip_address` and `user_agent`.
+- `ContactMessage` stores incoming contact forms (name, email, subject, message, optional organization) plus metadata.
+- `NewsletterSubscriber` stores subscription requests (email, name, source) and metadata.
+- `TrainingRegistration` captures training interest (name, email, phone, program, optional background/goals) and metadata.
+- Metadata includes headers such as `ip_address`, `user_agent`, `referrer`, and `accept_language`, and every record has `created_at`.
 
 ## API endpoints
 
-Use the JSON payloads below when the Vite app submits data. All endpoints accept `POST` only, return JSON, and respond with `detail` plus the created document `id`.
+Use the JSON payloads below when the Vite app submits data. All endpoints accept `POST` only, return JSON, and respond with `detail` plus the created record `id`.
 
 ### `POST /api/newsletter/subscribe/`
 
@@ -80,7 +75,7 @@ Response:
 ```json
 {
   "detail": "Subscription received. We'll keep you posted!",
-  "subscription_id": "docKey123"
+  "subscription_id": 1
 }
 ```
 
@@ -102,7 +97,7 @@ Response:
 ```json
 {
   "detail": "Thanks for reaching out! We will respond as soon as possible.",
-  "message_id": "msgKey123"
+  "message_id": 1
 }
 ```
 
@@ -126,7 +121,7 @@ Response:
 ```json
 {
   "detail": "Registration received. Our team will reach out with next steps.",
-  "registration_id": "regKey123"
+  "registration_id": 1
 }
 ```
 
@@ -138,5 +133,6 @@ python manage.py test
 
 ## Deployment notes
 
-- Run `python manage.py collectstatic` and serve the `staticfiles` directory if you plan to host static assets from Django.
-- When building a Cloud Run service, set the same environment variables in the service configuration and ensure the attached service account has Firestore read/write access.
+- Run `python manage.py collectstatic` and serve the `staticfiles` directory if you host static assets from Django.
+- Run `python manage.py migrate` before the service goes live so the tables exist in the production database.
+- When deploying, set the same environment variables in the service configuration (especially hosts and CORS origins) and keep `DEBUG=False`.

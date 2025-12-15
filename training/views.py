@@ -1,5 +1,6 @@
 import logging
 
+from django.db import DatabaseError
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
@@ -9,7 +10,8 @@ from hivebiolab.api_helpers import (
     json_success,
     get_client_metadata,
 )
-from hivebiolab.firebase_client import get_firestore_client, get_server_timestamp
+
+from .models import TrainingRegistration
 
 logger = logging.getLogger(__name__)
 
@@ -29,28 +31,27 @@ def register_participant(request):
         return json_error("Full name, email, and program choice are required.")
 
     metadata = get_client_metadata(request)
-    document = {
-        "full_name": full_name,
-        "email": email.lower(),
-        "phone": (payload.get("phone") or "").strip(),
-        "program": program,
-        "current_level": payload.get("current_level"),
-        "experience_summary": payload.get("experience"),
-        "goals": payload.get("goals"),
-        "message": payload.get("message"),
-        "metadata": metadata,
-        "created_at": get_server_timestamp(),
-    }
+
+    phone = (payload.get("phone") or "").strip()
+    current_level = (payload.get("current_level") or "").strip() or None
+    experience = (payload.get("experience") or "").strip() or None
+    goals = (payload.get("goals") or "").strip() or None
+    message = (payload.get("message") or "").strip() or None
 
     try:
-        client = get_firestore_client()
-        collection = client.collection("training_registrations")
-        doc_ref, _ = collection.add(document)
-    except RuntimeError as exc:
-        logger.exception("Firebase initialization failed.", exc_info=exc)
-        return json_error(str(exc), status=500)
-    except Exception:  # pragma: no cover - network/db
-        logger.exception("Failed to persist training registration.")
+        registration = TrainingRegistration.objects.create(
+            full_name=full_name,
+            email=email.lower(),
+            phone=phone,
+            program=program,
+            current_level=current_level,
+            experience_summary=experience,
+            goals=goals,
+            message=message,
+            metadata=metadata,
+        )
+    except DatabaseError as exc:  # pragma: no cover - DB failure
+        logger.exception("Failed to persist training registration.", exc_info=exc)
         return json_error(
             "Registration failed. Please try again later.", status=500
         )
@@ -58,5 +59,5 @@ def register_participant(request):
     return json_success(
         "Registration received. Our team will reach out with next steps.",
         status=201,
-        extra={"registration_id": doc_ref.id},
+        extra={"registration_id": registration.pk},
     )

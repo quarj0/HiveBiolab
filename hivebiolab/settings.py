@@ -1,6 +1,8 @@
+import sys
 from pathlib import Path
-from decouple import config
+
 import dj_database_url
+from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -12,11 +14,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config("SECRET_KEY")
 
 DEBUG = config("DEBUG", default=False, cast=bool)
+TESTING = len(sys.argv) > 1 and sys.argv[1] == "test"
 
 ALLOWED_HOSTS = config(
     "ALLOWED_HOSTS",
-    "biolab.kumasihive.com",
-    "api.biolab.kumasihive.com",
+    default="api.biolab.kumasihive.com",
 ).split()
 
 
@@ -52,7 +54,7 @@ CSRF_TRUSTED_ORIGINS = [
 # Production security (HTTPS)
 # ─────────────────────────────
 
-if not DEBUG:
+if not DEBUG and not TESTING:
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_SAMESITE = "None"
 
@@ -135,13 +137,21 @@ TEMPLATES = [
 # Database (SQLite – valid for single-instance)
 # ─────────────────────────────
 
-DATABASES = {
-    "default": dj_database_url.config(
-        default=config("DATABASE_URL"),
-        conn_max_age=600,
-        ssl_require=True,
-    )
-}
+if TESTING:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": ":memory:",
+        }
+    }
+else:
+    DATABASES = {
+        "default": dj_database_url.config(
+            default=config("DATABASE_URL"),
+            conn_max_age=600,
+            ssl_require=True,
+        )
+    }
 
 
 # ─────────────────────────────
